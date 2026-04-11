@@ -47,9 +47,12 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:build": "node test/build-output.test.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "format": "biome format --write src/ test/",
+    "format:check": "biome format src/ test/"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.11",
     "@types/geojson": "^7946.0.16",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
