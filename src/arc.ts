@@ -9,8 +9,10 @@ import type { Position } from 'geojson';
  *
  * @example
  * ```typescript
- * const arc = new Arc({ x: 45.123456789, y: 50.987654321 });
- * console.log(arc.json()); // { type: 'Feature', geometry: { type: 'LineString', coordinates: [ [Array] ] }, properties: { x: 45.123457, y: 50.987654 } }
+ * const gc = new GreatCircle({x: -122, y: 48}, {x: -77, y: 39});
+ * const arc = gc.Arc(3);
+ * console.log(arc.json());
+ * // { type: 'Feature', geometry: { type: 'LineString', coordinates: [[-122, 48], [-99.5, 43.5], [-77, 39]] }, properties: {} }
  * ```
  */
 export class Arc {
@@ -45,28 +47,17 @@ export class Arc {
             };
         }
 
-        // Handle single LineString
+        // Handle single LineString — index 0 is guaranteed by the length === 1 check above.
         if (this.geometries.length === 1) {
-            const firstGeometry = this.geometries[0];
-            if (!firstGeometry) {
-                return {
-                    type: 'Feature',
-                    geometry: { type: 'LineString', coordinates: [] },
-                    properties: this.properties
-                };
-            }
-
             return {
                 type: 'Feature',
-                geometry: { type: 'LineString', coordinates: firstGeometry.coords },
+                geometry: { type: 'LineString', coordinates: this.geometries[0]!.coords },
                 properties: this.properties
             };
         }
 
         // Handle multiple LineStrings as MultiLineString
-        const coordinates: Position[][] = this.geometries
-            .filter(geom => geom !== undefined)
-            .map(geom => geom.coords);
+        const coordinates: Position[][] = this.geometries.map(geom => geom.coords);
 
         return {
             type: 'Feature',
@@ -82,8 +73,10 @@ export class Arc {
      *
      * @example
      * ```typescript
-     * const arc = new Arc({ name: 'test-arc' });
-     * console.log(arc.wkt()); // "LINESTRING EMPTY" or "LINESTRING(lon lat,lon lat,...)"
+     * const gc = new GreatCircle({x: -122, y: 48}, {x: -77, y: 39});
+     * const arc = gc.Arc(3);
+     * console.log(arc.wkt());
+     * // 'LINESTRING(-122 48,-99.5 43.5,-77 39)'
      * ```
      */
     wkt(): string {
@@ -91,27 +84,16 @@ export class Arc {
             return '';
         }
 
-        let wktParts: string[] = [];
+        const wktParts: string[] = [];
 
         for (const geometry of this.geometries) {
-            if (!geometry || geometry.coords.length === 0) {
+            if (geometry.coords.length === 0) {
                 wktParts.push('LINESTRING EMPTY');
                 continue;
             }
 
-            const coordStrings = geometry.coords
-                .filter(coord => coord !== undefined)
-                .map(coord => {
-                    const lon = coord[0] ?? 0;
-                    const lat = coord[1] ?? 0;
-                    return `${lon} ${lat}`;
-                });
-
-            if (coordStrings.length === 0) {
-                wktParts.push('LINESTRING EMPTY');
-            } else {
-                wktParts.push(`LINESTRING(${coordStrings.join(',')})`);
-            }
+            const coordStrings = geometry.coords.map(coord => `${coord[0]} ${coord[1]}`);
+            wktParts.push(`LINESTRING(${coordStrings.join(',')})`);
         }
 
         return wktParts.join('; ');
